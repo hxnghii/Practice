@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Giao Tiếp Trên Không Gian Mạng</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink:#FFD3E4; --pink-deep:#FF9EC4; --mint:#C9F3E1; --mint-deep:#7FDCB3;
+    --lav:#E3D9FA; --butter:#FFF0C2;
+    --ink:#4A3F52; --ink-soft:#7A6E82;
+    --card:#FFFFFF; --bg1:#FFF3F8; --bg2:#EFFBF6;
+    --good:#63C99A; --good-bg:#E4F9EE; --bad:#FF8FA3; --bad-bg:#FFE8ED;
+    --radius:22px;
+    box-sizing:border-box;
+    padding-top: env(safe-area-inset-top,0px);
+    padding-bottom: env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:inherit;}
+  html{scroll-padding-top: env(safe-area-inset-top,0px);}
+  body{
+    margin:0; min-height:100%;
+    font-family:'Nunito',sans-serif; color:var(--ink);
+    background: radial-gradient(circle at 15% 10%, var(--bg1), transparent 55%),
+                radial-gradient(circle at 85% 90%, var(--bg2), transparent 55%),
+                linear-gradient(180deg,#FFF9FC, #F2FBF7);
+    display:flex; justify-content:center;
+    position:relative; overflow-x:hidden;
+  }
+  .blob{
+    position:fixed; border-radius:50%; filter:blur(55px);
+    opacity:.55; z-index:0; pointer-events:none;
+  }
+  .blob1{ width:280px; height:280px; top:-90px; left:-90px; background:var(--pink); }
+  .blob2{ width:320px; height:320px; bottom:-110px; right:-100px; background:var(--mint); }
+  .blob3{ width:220px; height:220px; top:20%; right:-90px; background:var(--lav); }
+  .blob4{ width:200px; height:200px; bottom:8%; left:-80px; background:var(--butter); }
+  .blob5{ width:160px; height:160px; top:55%; left:48%; background:var(--pink-deep); opacity:.28; }
+  @media (max-width:700px){ .blob{ opacity:.35; } }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --card:#FFFFFF; --ink:#4A3F52; --bg1:#FFF3F8; --bg2:#EFFBF6;
+    }
+  }
+  html,body{ min-height:100vh; min-height:100dvh; }
+  body{ display:flex; justify-content:center; align-items:flex-start; }
+  /* margin:auto in a flex container centers both ways, and never cuts off the top when content is tall */
+  .app{ width:100%; max-width:900px; margin:auto; padding:32px 24px 40px; position:relative; z-index:1; }
+
+  /* ---- Floating decorations ---- */
+  .deco-layer{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .deco{
+    position:absolute; font-size:2.2rem; opacity:.5; user-select:none;
+    animation: floaty 7s ease-in-out infinite;
+    filter: drop-shadow(0 4px 6px rgba(184,79,126,.15));
+  }
+  .deco.sm{ font-size:1.6rem; opacity:.38; }
+  @keyframes floaty{ 0%,100%{ transform:translateY(0) rotate(var(--r,0deg)); } 50%{ transform:translateY(-14px) rotate(calc(var(--r,0deg) + 6deg)); } }
+  @media (max-width:900px){ .deco.hide-m{ display:none; } }
+
+  /* ---- Header ---- */
+  .hero{ text-align:center; margin-bottom:26px; }
+  .pill{
+    display:inline-flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,.85); padding:10px 22px; border-radius:999px;
+    box-shadow:0 6px 18px rgba(184,79,126,.10);
+    font-family:'Nunito',sans-serif; font-weight:800; font-size:.8rem;
+    letter-spacing:.14em; text-transform:uppercase; color:#A5557F;
+  }
+  .pill .dot{
+    width:12px; height:12px; border-radius:50%; background:var(--mint-deep);
+    box-shadow:0 0 0 4px rgba(127,220,179,.3);
+  }
+  h1.title{
+    font-family:'Baloo 2', sans-serif; font-weight:800; line-height:1.05;
+    font-size:clamp(2.1rem, 6.4vw, 3.5rem);
+    margin:18px 0 10px; display:flex; flex-wrap:wrap; justify-content:center; align-items:baseline; gap:0 .3em;
+  }
+  .t-pink{ color:#B84F7E; text-shadow:2px 2px 0 #fff, 4px 4px 0 rgba(184,79,126,.14); }
+  .t-mint{
+    color:var(--mint-deep); display:inline-block; transform:rotate(-3deg);
+    text-shadow:2px 2px 0 #fff, 4px 4px 0 rgba(79,174,133,.18);
+  }
+  p.subtitle{ text-align:center; color:var(--ink-soft); margin:0; font-weight:700; font-size:1.05rem; }
+
+  /* ---- Lucky Spin ---- */
+  .lucky-box{
+    width:100%; max-width:340px; margin:0 auto 28px; background:#fff; border-radius:24px;
+    padding:16px 20px 20px; text-align:center;
+    box-shadow:0 10px 24px rgba(0,0,0,0.07);
+  }
+  .lucky-label{
+    margin:0 0 10px; font-family:'Baloo 2',sans-serif; font-weight:800; color:#B84F7E;
+    font-size:1.25rem; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .wheel{ display:inline-block; }
+  .wheel.spinning{ animation:spin 0.9s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .lucky-display{
+    font-family:'Baloo 2',sans-serif; font-weight:800; font-size:2.6rem; line-height:1.4;
+    color:var(--ink); background:linear-gradient(160deg,var(--butter),#FFE9A3);
+    border-radius:16px; padding:4px 0; margin-bottom:12px;
+  }
+  .lucky-display.pop{ animation:pop .45s ease; }
+  .lucky-btn{
+    font-family:'Baloo 2',sans-serif; font-weight:700; border:none; cursor:pointer;
+    background:#7FDCB3; color:#fff; padding:10px 26px; border-radius:999px; font-size:1rem;
+    box-shadow:0 5px 0 #4FAE85;
+  }
+  .lucky-btn:active{ transform:translateY(3px); box-shadow:none; }
+  .lucky-btn:disabled{ opacity:.7; cursor:default; }
+
+  /* ---- Board (centered rows, last row stays centered) ---- */
+  .board-grid{ display:flex; flex-wrap:wrap; justify-content:center; gap:14px; }
+  .tile-btn{
+    flex:0 0 calc((100% - 5*14px) / 6);
+    aspect-ratio:1/1; border:none; border-radius:var(--radius);
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:1.8rem;
+    color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.08), 0 10px 18px rgba(0,0,0,0.08);
+    transition: transform .12s ease, box-shadow .12s ease;
+    position:relative;
+  }
+  @media (max-width:640px){ .tile-btn{ flex-basis:calc((100% - 2*14px) / 3); } }
+  @media (max-width:380px){ .tile-btn{ flex-basis:calc((100% - 14px) / 2); } }
+  .tile-btn:hover{ transform:translateY(-3px); }
+  .tile-btn:active{ transform:translateY(1px); box-shadow:0 2px 0 rgba(0,0,0,0.08); }
+  .tile-btn:nth-child(5n+1){ background:linear-gradient(160deg,var(--pink),var(--pink-deep)); }
+  .tile-btn:nth-child(5n+2){ background:linear-gradient(160deg,var(--mint),var(--mint-deep)); }
+  .tile-btn:nth-child(5n+3){ background:linear-gradient(160deg,var(--lav),#C6AEF0); }
+  .tile-btn:nth-child(5n+4){ background:linear-gradient(160deg,var(--butter),#FFD873); color:#7A5A00; }
+  .tile-btn:nth-child(5n+5){ background:linear-gradient(160deg,var(--pink-deep),#F26FA0); }
+  .tile-btn.done{
+    background:#E8E4EB !important; color:#B9AFC2 !important;
+    box-shadow:inset 0 2px 6px rgba(0,0,0,0.06); cursor:default;
+  }
+  .tile-btn.done:hover{ transform:none; }
+  .tile-btn.done::after{
+    content:"✓"; position:absolute; top:8px; right:10px; font-size:1rem;
+    background:#fff; color:var(--good); border-radius:50%; width:22px; height:22px;
+    display:flex; align-items:center; justify-content:center; font-weight:800;
+  }
+
+  /* ---- Question view ---- */
+  .qview{ display:none; }
+  .qview.active{ display:block; }
+  .top-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .back-btn{
+    font-family:'Nunito',sans-serif; font-weight:800; border:none; cursor:pointer;
+    background:#fff; color:#B84F7E; padding:10px 18px; border-radius:999px;
+    box-shadow:0 4px 0 rgba(0,0,0,0.06), 0 6px 14px rgba(0,0,0,0.06);
+  }
+  .back-btn:active{ transform:translateY(2px); box-shadow:none; }
+  .badge{
+    font-family:'Baloo 2',sans-serif; font-weight:700; background:var(--mint-deep);
+    color:#fff; padding:8px 16px; border-radius:999px; font-size:.95rem;
+  }
+  .q-card{
+    background:var(--card); border-radius:28px; padding:26px 22px;
+    box-shadow:0 10px 26px rgba(0,0,0,0.07);
+    min-height:110px; display:flex; align-items:center; justify-content:center;
+    text-align:center; margin-bottom:22px;
+  }
+  .q-card p{ font-size:1.15rem; font-weight:700; line-height:1.5; margin:0; color:var(--ink); }
+  .answers{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .ans-btn{
+    font-family:'Nunito',sans-serif; font-weight:700; font-size:1.02rem; text-align:left;
+    border:none; border-radius:18px; padding:18px 16px; min-height:96px;
+    cursor:pointer; color:var(--ink); line-height:1.35;
+    display:flex; gap:10px; align-items:flex-start;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.06), 0 8px 16px rgba(0,0,0,0.06);
+    transition: transform .1s ease;
+  }
+  .ans-btn:active:not(:disabled){ transform:translateY(2px); }
+  .ans-btn:nth-child(1){ background:var(--pink); }
+  .ans-btn:nth-child(2){ background:var(--mint); }
+  .ans-btn:nth-child(3){ background:var(--lav); }
+  .ans-btn:nth-child(4){ background:var(--butter); }
+  .ans-letter{
+    flex:0 0 auto; width:28px; height:28px; border-radius:50%; background:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:.9rem;
+  }
+  .ans-btn.correct{ background:var(--good-bg); outline:3px solid var(--good); animation:pop .35s ease; }
+  .ans-btn.wrong{ background:var(--bad-bg); outline:3px solid var(--bad); animation:shake .5s ease; }
+  .ans-btn:disabled{ cursor:default; opacity:.85; }
+  @keyframes pop{ 0%{transform:scale(1);} 40%{transform:scale(1.04);} 100%{transform:scale(1);} }
+  @keyframes shake{ 0%,100%{transform:translateX(0);} 15%{transform:translateX(-7px);} 35%{transform:translateX(6px);} 55%{transform:translateX(-4px);} 75%{transform:translateX(3px);} }
+
+  .feedback{
+    text-align:center; font-family:'Baloo 2',sans-serif; font-weight:700;
+    margin-top:18px; min-height:1.4em; font-size:1.05rem;
+  }
+  .feedback.good{ color:var(--good); }
+  .feedback.bad{ color:#E0637F; }
+  .next-row{ display:flex; justify-content:center; margin-top:16px; visibility:hidden; }
+  .next-row.show{ visibility:visible; }
+  .next-btn{
+    font-family:'Baloo 2',sans-serif; font-weight:700; border:none; cursor:pointer;
+    background:#B84F7E; color:#fff; padding:12px 26px; border-radius:999px; font-size:1rem;
+    box-shadow:0 5px 0 #8C3860;
+  }
+  .next-btn:active{ transform:translateY(3px); box-shadow:none; }
+  #confetti{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:50; }
+  @media (prefers-reduced-motion: reduce){ .deco, .wheel.spinning{ animation:none; } }
+</style>
+</head>
+<body>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div class="blob blob3"></div>
+<div class="blob blob4"></div>
+<div class="blob blob5"></div>
+<div class="deco-layer" aria-hidden="true">
+  <span class="deco" style="top:12%;left:6%;--r:-8deg;animation-delay:-1s">💬</span>
+  <span class="deco hide-m" style="top:36%;left:3%;--r:6deg;animation-delay:-3s">🌐</span>
+  <span class="deco sm hide-m" style="top:62%;left:7%;--r:-4deg;animation-delay:-5s">💗</span>
+  <span class="deco hide-m" style="top:84%;left:5%;--r:8deg;animation-delay:-2s">🔒</span>
+  <span class="deco" style="top:10%;right:6%;--r:8deg;animation-delay:-4s">📱</span>
+  <span class="deco sm hide-m" style="top:33%;right:4%;--r:-6deg;animation-delay:-2s">✨</span>
+  <span class="deco hide-m" style="top:58%;right:6%;--r:5deg;animation-delay:-6s">🤝</span>
+  <span class="deco sm" style="top:85%;right:5%;--r:-8deg;animation-delay:-3s">👍</span>
+</div>
+<canvas id="confetti"></canvas>
+<div class="app">
+
+  <div id="board" class="board-view">
+    <div class="hero">
+      <div class="pill"><span class="dot"></span>Ôn tập các câu hỏi bài 6</div>
+      <h1 class="title"><span class="t-mint">Giao Tiếp Trên Không Gian Mạng</span></h1>
+      <p class="subtitle">Chọn một ô để trả lời câu hỏi</p>
+    </div>
+    <div class="lucky-box">
+      <p class="lucky-label"><span class="wheel" id="wheel">🎡</span> Lucky Spin</p>
+      <div class="lucky-display" id="luckyDisplay">--</div>
+      <button class="lucky-btn" id="luckyBtn">Quay số</button>
+    </div>
+    <div class="board-grid" id="boardGrid"></div>
+  </div>
+
+  <div id="qview" class="qview">
+    <div class="top-row">
+      <button class="back-btn" id="backBtn">← Quay lại</button>
+      <span class="badge" id="qBadge">Câu 1</span>
+    </div>
+    <div class="q-card"><p id="qText"></p></div>
+    <div class="answers" id="answers"></div>
+    <p class="feedback" id="feedback"></p>
+    <div class="next-row" id="nextRow"><button class="next-btn" id="nextBtn">Về bảng câu hỏi</button></div>
+  </div>
+
+</div>
+
+<script>
+const QUESTIONS = [
+{q:"Khi phát hiện một thông tin giật gân, chưa được kiểm chứng trên mạng xã hội, cách xử lý nào dưới đây thể hiện đúng nguyên tắc ứng xử nhân văn và trách nhiệm của người dùng số?",
+ a:["Chia sẻ ngay lên trang cá nhân kèm lời cảnh báo \"cần cẩn trọng\" để bạn bè chủ động phòng tránh.",
+    "Tương tác, để lại bình luận hỏi rõ thực hư để bài viết tăng lượt hiển thị cho nhiều người cùng kiểm chứng.",
+    "Kiểm tra tính xác thực từ các cổng thông tin/báo chí chính thống trước khi tin tưởng hoặc chia sẻ.",
+    "Bỏ qua không tương tác và lập tức gởi tin nhắn cảnh báo cho tất cả các nhóm chat gia đình."], c:2},
+{q:"Hành vi nào sau đây VI PHẠM nghiêm trọng quy tắc ứng xử nhân văn và có thể bị truy cứu trách nhiệm theo Luật An ninh mạng?",
+ a:["Đăng tải bài viết phân tích, phản bác ý kiến cá nhân của người khác trên tinh thần xây dựng và lịch sự.",
+    "Đăng tải nội dung, hình ảnh xúc phạm nghiêm trọng đến danh dự, nhân phẩm của tổ chức, cá nhân.",
+    "Chụp màn hình các tin nhắn quấy rối, công kích để làm bằng chứng gửi cơ quan chức năng.",
+    "Báo cáo (report) tài khoản phát tán thông tin giả mạo mà không thông báo trước cho chủ tài khoản đó."], c:1},
+{q:"Việc đăng tải ảnh hoặc thông tin cá nhân của người khác lên mạng xã hội khi chưa được họ cho phép thể hiện điều gì?",
+ a:["Sự thiếu chuẩn mực về mặt Lịch sự do sử dụng ngôn từ và hình ảnh không phù hợp ngữ cảnh giao tiếp.",
+    "Sự vi phạm nguyên tắc Tôn trọng quyền riêng tư và bí mật đời tư của người khác.",
+    "Hành vi Bạo lực mạng (Cyberbullying) trực tiếp nhằm mục đích đe dọa, miệt thị đối phương.",
+    "Sự thiếu Thấu hiểu dẫn đến việc quy chụp, định kiến và tấn công cá nhân khi tranh luận."], c:1},
+{q:"Khi tham gia một cuộc thảo luận trên diễn đàn, bạn A nhận thấy quan điểm của bạn B hoàn toàn trái ngược và thiếu căn cứ. Để thể hiện tính nhân văn (Khía cạnh Tôn trọng và Thấu hiểu), phản ứng nào sau đây là chuẩn mực nhất?",
+ a:["Im lặng hoàn toàn, không tương tác để tránh gây tranh cãi và không bị coi là tấn công cá nhân.",
+    "Đưa ra lý lẽ phản bác dựa trên sự lịch sự, chỉ ra điểm chưa đúng nhưng tuyệt đối không ép buộc đối phương phải chấp nhận quan điểm của mình.",
+    "Sử dụng các thuật ngữ lóng, teencode để làm giảm bớt tính căng thẳng, nghiêm trọng của cuộc tranh luận.",
+    "Nhắc nhở bạn B rằng quan điểm đó thiếu căn cứ và gắn thẻ (tag) quản trị viên vào khóa tài khoản bạn B."], c:1},
+{q:"Bạn An bị một nhóm bạn cùng trường ghép ảnh chế giễu và đăng lên mạng, kéo theo nhiều bình luận tiêu cực từ người lạ. Theo hướng dẫn xử lý trong bài học, An KHÔNG nên thực hiện hành động nào dưới đây?",
+ a:["Chụp màn hình để lưu lại đầy đủ bằng chứng về hành vi vi phạm.",
+    "Viết bài hoặc bình luận đáp trả nhóm bạn đó bằng ngôn từ gắt gao để bảo vệ danh dự bản thân.",
+    "Chặn (block) các tài khoản quấy rối để tránh tiếp nhận thông tin độc hại.",
+    "Tìm kiếm sự giúp đỡ từ thầy cô, phụ huynh hoặc cơ quan chức năng."], c:1},
+{q:"Nguyên tắc \"Đối xử với người khác theo cách mà mình muốn được đối xử\" nhằm mục đích chính nào trong việc hình thành thói quen ứng xử nhân văn?",
+ a:["Giúp tối ưu hóa thời gian phản hồi và nâng cao hiệu suất làm việc trực tuyến.",
+    "Giúp tăng mức độ tương tác và lượt theo dõi trên các nền tảng mạng xã hội.",
+    "Giúp quán triệt tinh thần tự kiểm soát, thấu hiểu và điều chỉnh hành vi của bản thân trước khi phát ngôn hoặc hành động trên mạng.",
+    "Giúp tự động phát hiện và ngăn chặn các nguy cơ tấn công từ mã độc và lừa đảo trực tuyến."], c:2},
+{q:"Để hình thành thói quen ứng xử nhân văn vững chắc trong không gian mạng, nguyên tắc vàng mang tính triết lý cốt lõi được bài học nhấn mạnh là gì?",
+ a:["Càng chia sẻ nhiều thông tin đời tư thì càng xây dựng được sự tin tưởng bền vững từ cộng đồng.",
+    "Luôn chuẩn bị sẵn lý lẽ để phản bác ngay lập tức nếu ý kiến của người khác không trùng khớp với mình.",
+    "Quán triệt tinh thần đối xử với người khác theo cách mà mình muốn được đối xử.",
+    "Giới hạn bản thân, không giao tiếp hay tương tác với bất kỳ người dùng lạ nào trên mạng để đảm bảo an toàn tuyệt đối."], c:2},
+{q:"Trong các yếu tố sau, đâu là nhược điểm thuộc về bản chất của môi trường giao tiếp mạng, khác với hành vi ứng xử sai lệch của con người?",
+ a:["Hiện tượng phát tán tin đồn thất thiệt gây hoang mang dư luận.",
+    "Môi trường giao tiếp thiếu đi các tín hiệu phi ngôn ngữ như ánh mắt, cử chỉ, điệu bộ trực tiếp.",
+    "Hành vi mạo danh tài khoản người khác để thực hiện hành vi lừa đảo.",
+    "Việc sử dụng ngôn từ thiếu chuẩn mực, teencode tràn lan trong trao đổi công việc."], c:1},
+{q:"Khi nhận được cuộc gọi Video từ người quen nhờ chuyển tiền gấp vì lý do cấp bách, nhưng hình ảnh/giọng nói hơi chập chờn (dấu hiệu lừa đảo bằng công nghệ Deepfake), hành động phòng ngừa đúng đắn nhất là gì?",
+ a:["Chuyển ngay một phần số tiền để hỗ trợ tạm thời rồi xác minh sau.",
+    "Tắt máy và lập tức gọi lại bằng số điện thoại di động thông thường/kênh liên lạc trực tiếp để xác nhận.",
+    "Yêu cầu đối phương chụp ảnh Căn cước công dân gửi qua tin nhắn để làm bằng chứng.",
+    "Bấm vào liên kết ngân hàng mà đối phương gửi qua nhóm chat để nạp tiền nhanh."], c:1},
+{q:"Khi tham gia một buổi học hoặc họp trực tuyến (Google Meet/Zoom), tác phong nào dưới đây vi phạm nguyên tắc Lịch sự và nghiêm túc?",
+ a:["Tắt micro khi không phát biểu để tránh tiếng ồn rác ảnh hưởng đến cuộc họp.",
+    "Ăn mặc quá thoải mái (áo may ba lỗ/đồ ngủ) và để lộ không gian bừa bộn phía sau camera.",
+    "Chủ động giơ tay phát biểu khi muốn đóng góp ý kiến cho bài học.",
+    "Sử dụng tính năng làm mờ hậu cảnh (blur background) để đảm bảo sự riêng tư của căn phòng."], c:1}
+];
+const LETTERS = ["A","B","C","D"];
+
+/* ---- Sounds: thay file âm thanh bằng cách đặt đúng tên cạnh file HTML ---- */
+const sound1 = new Audio('sound1.mp3'); // âm thanh quay số
+const sound2 = new Audio('sound2.mp3'); // âm thanh đáp án đúng
+sound1.preload = 'auto'; sound2.preload = 'auto';
+function playSound(a){
+  try{ a.currentTime = 0; const p = a.play(); if(p && p.catch) p.catch(()=>{}); }catch(e){}
+}
+
+/* ---- Confetti nhẹ (pháo giấy) ---- */
+const cvs = document.getElementById('confetti');
+const ctx = cvs.getContext('2d');
+let parts = [], raf = null;
+const COLORS = ['#FF9EC4','#7FDCB3','#C6AEF0','#FFD873','#F26FA0','#B84F7E'];
+function sizeCanvas(){
+  const d = window.devicePixelRatio || 1;
+  cvs.width = innerWidth * d; cvs.height = innerHeight * d;
+  ctx.setTransform(d,0,0,d,0,0);
+}
+sizeCanvas(); addEventListener('resize', sizeCanvas);
+function burst(x, y){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  for(let i=0;i<70;i++){
+    const ang = -Math.PI/2 + (Math.random()-.5)*Math.PI*1.1;
+    const sp = 5 + Math.random()*8;
+    parts.push({
+      x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp,
+      w:6+Math.random()*6, h:4+Math.random()*5,
+      rot:Math.random()*6.28, vr:(Math.random()-.5)*.3,
+      color:COLORS[(Math.random()*COLORS.length)|0],
+      life:0, max:90+Math.random()*50, round:Math.random()<.3
+    });
+  }
+  if(!raf) raf = requestAnimationFrame(tick);
+}
+function tick(){
+  ctx.clearRect(0,0,innerWidth,innerHeight);
+  parts = parts.filter(p=> p.life < p.max && p.y < innerHeight+30);
+  parts.forEach(p=>{
+    p.life++; p.vx *= .985; p.vy = p.vy*.985 + .22; // gravity + air drag
+    p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+    ctx.globalAlpha = Math.max(0, 1 - Math.pow(p.life/p.max, 3));
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+    ctx.fillStyle = p.color;
+    if(p.round){ ctx.beginPath(); ctx.arc(0,0,p.w/2.2,0,6.28); ctx.fill(); }
+    else ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+    ctx.restore();
+  });
+  ctx.globalAlpha = 1;
+  raf = parts.length ? requestAnimationFrame(tick) : (ctx.clearRect(0,0,innerWidth,innerHeight), null);
+}
+const done = new Array(QUESTIONS.length).fill(false);
+let current = -1;
+
+const boardGrid = document.getElementById('boardGrid');
+const board = document.getElementById('board');
+const qview = document.getElementById('qview');
+const qText = document.getElementById('qText');
+const qBadge = document.getElementById('qBadge');
+const answersEl = document.getElementById('answers');
+const feedback = document.getElementById('feedback');
+const nextRow = document.getElementById('nextRow');
+
+function renderBoard(){
+  boardGrid.innerHTML = '';
+  QUESTIONS.forEach((_, i)=>{
+    const b = document.createElement('button');
+    b.className = 'tile-btn' + (done[i] ? ' done' : '');
+    b.textContent = i+1;
+    if(done[i]){
+      b.disabled = true;
+    } else {
+      b.addEventListener('click', ()=> openQuestion(i));
+    }
+    boardGrid.appendChild(b);
+  });
+}
+
+function openQuestion(i){
+  current = i;
+  const item = QUESTIONS[i];
+  qBadge.textContent = 'Câu ' + (i+1);
+  qText.textContent = item.q;
+  feedback.textContent = '';
+  feedback.className = 'feedback';
+  nextRow.classList.remove('show');
+  answersEl.innerHTML = '';
+  item.a.forEach((text, idx)=>{
+    const btn = document.createElement('button');
+    btn.className = 'ans-btn';
+    btn.innerHTML = '<span class="ans-letter">'+LETTERS[idx]+'</span><span>'+text+'</span>';
+    btn.addEventListener('click', ()=> selectAnswer(idx, item.c, btn));
+    answersEl.appendChild(btn);
+  });
+  board.style.display = 'none';
+  qview.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function selectAnswer(idx, correctIdx, btnEl){
+  const all = answersEl.querySelectorAll('.ans-btn');
+  all.forEach(b=> b.disabled = true);
+  done[current] = true;
+  if(idx === correctIdx){
+    btnEl.classList.add('correct');
+    feedback.textContent = 'Chính xác! 🎉';
+    feedback.classList.add('good');
+    playSound(sound2);
+    const r = btnEl.getBoundingClientRect();
+    burst(r.left + r.width/2, r.top + r.height/2);
+    setTimeout(()=> burst(innerWidth*0.25, innerHeight*0.85), 180);
+    setTimeout(()=> burst(innerWidth*0.75, innerHeight*0.85), 320);
+  } else {
+    btnEl.classList.add('wrong');
+    all[correctIdx].classList.add('correct');
+    feedback.textContent = 'Chưa đúng, đáp án đúng là ' + LETTERS[correctIdx] + '.';
+    feedback.classList.add('bad');
+  }
+  nextRow.classList.add('show');
+}
+
+document.getElementById('backBtn').addEventListener('click', backToBoard);
+document.getElementById('nextBtn').addEventListener('click', backToBoard);
+function backToBoard(){
+  qview.classList.remove('active');
+  board.style.display = 'block';
+  renderBoard();
+  window.scrollTo(0,0);
+}
+
+renderBoard();
+
+const luckyBtn = document.getElementById('luckyBtn');
+const luckyDisplay = document.getElementById('luckyDisplay');
+function randLucky(){
+  let n;
+  do{ n = Math.floor(Math.random()*48)+1; } while(n===13);
+  return n;
+}
+const wheel = document.getElementById('wheel');
+luckyBtn.addEventListener('click', ()=>{
+  luckyBtn.disabled = true;
+  wheel.classList.add('spinning');
+  playSound(sound1);
+  let ticks = 0, total = 26, delay = 55;
+  (function step(){
+    luckyDisplay.textContent = randLucky();
+    ticks++;
+    if(ticks >= total){
+      wheel.classList.remove('spinning');
+      sound1.pause();
+      luckyDisplay.classList.remove('pop');
+      void luckyDisplay.offsetWidth;
+      luckyDisplay.classList.add('pop');
+      luckyBtn.disabled = false;
+      return;
+    }
+    if(ticks > total - 10) delay += 22; // chậm dần cuối vòng quay
+    setTimeout(step, delay);
+  })();
+});
+</script>
+</body>
+</html>
